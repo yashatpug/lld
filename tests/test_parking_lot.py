@@ -1,6 +1,8 @@
 import subprocess
 import sys
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 
 from parking_lot import ParkingLot, Vehicle, VehicleType
@@ -14,28 +16,53 @@ class ParkingLotTests(unittest.TestCase):
         lot = ParkingLot("Test Lot", "Test Address", 2)
 
         self.assertEqual(lot.name, "Test Lot")
-        self.assertEqual(lot.get_available_slots(), 2)
-        self.assertEqual(lot.get_occupied_slots(), 0)
+        self.assertEqual(len(lot.parking_spot_manager.occupied_spots), 0)
+        self.assertEqual(
+            sum(len(spots) for spots in lot.parking_spot_manager.available_spots.values()),
+            2,
+        )
 
     def test_park_and_unpark_vehicle_updates_slot_counts(self):
         parking_lot = ParkingLot("Test Lot", "Test Address", total_slots=2)
         vehicle = Vehicle("KA-01-HH-1234", VehicleType.FOUR_WHEELER)
 
-        self.assertTrue(parking_lot.park_vehicle(vehicle))
-        self.assertEqual(parking_lot.get_available_slots(), 1)
-        self.assertEqual(parking_lot.get_occupied_slots(), 1)
+        self.assertIsNone(parking_lot.park_vehicle(vehicle))
+        self.assertEqual(len(parking_lot.parking_spot_manager.occupied_spots), 1)
+        self.assertEqual(
+            sum(
+                len(spots)
+                for spots in parking_lot.parking_spot_manager.available_spots.values()
+            ),
+            1,
+        )
 
-        self.assertTrue(parking_lot.unpark_vehicle(vehicle))
-        self.assertEqual(parking_lot.get_available_slots(), 2)
-        self.assertEqual(parking_lot.get_occupied_slots(), 0)
+        self.assertIsNone(parking_lot.unpark_vehicle(vehicle))
+        self.assertEqual(len(parking_lot.parking_spot_manager.occupied_spots), 0)
+        self.assertEqual(
+            sum(
+                len(spots)
+                for spots in parking_lot.parking_spot_manager.available_spots.values()
+            ),
+            2,
+        )
 
     def test_cannot_unpark_a_vehicle_that_is_not_parked(self):
         parking_lot = ParkingLot("Test Lot", "Test Address", total_slots=2)
         vehicle = Vehicle("KA-01-HH-1234", VehicleType.FOUR_WHEELER)
 
-        self.assertFalse(parking_lot.unpark_vehicle(vehicle))
-        self.assertEqual(parking_lot.get_available_slots(), 2)
-        self.assertEqual(parking_lot.get_occupied_slots(), 0)
+        self.assertIsNone(parking_lot.unpark_vehicle(vehicle))
+        self.assertEqual(len(parking_lot.parking_spot_manager.occupied_spots), 0)
+
+    def test_display_methods_delegate_to_spot_manager(self):
+        parking_lot = ParkingLot("Test Lot", "Test Address", total_slots=2)
+        output = StringIO()
+
+        with redirect_stdout(output):
+            parking_lot.show_available_spots()
+            parking_lot.show_parked_vehicles()
+
+        self.assertIn("Available Parking Spots:", output.getvalue())
+        self.assertIn("No vehicles parked.", output.getvalue())
 
 
 class EntryPointTests(unittest.TestCase):
