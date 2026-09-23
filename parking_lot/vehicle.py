@@ -1,6 +1,6 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 
-from vehicle_type import VehicleType
+from .vehicle_type import VehicleType
 
 class Vehicle(ABC):
     def __init__(self, vehicle_reg_num: str, vehicle_type: VehicleType):

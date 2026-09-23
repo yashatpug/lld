@@ -1,5 +1,5 @@
-from vehicle import Vehicle
-from vehicle_type import VehicleType
+from .vehicle import Vehicle
+from .vehicle_type import VehicleType
 
 class ParkingSpot:
     def __init__(self, spot_id: str, vehicle_type: VehicleType):
